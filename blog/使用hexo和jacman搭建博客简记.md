@@ -1,4 +1,13 @@
-
+---
+title: 使用hexo和jacman搭建博客简记
+date: 2016/06/23 21:12:22
+toc: false
+list_number: false
+categories:
+- 教程
+tags:
+- hexo jacman
+---
 
 ## 写一篇博客
 1.  在创建博客目录的`.blog/source/_posts`文件夹中创建一个md文件.
