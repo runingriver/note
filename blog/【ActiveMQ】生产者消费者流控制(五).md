@@ -103,3 +103,5 @@ Tip：这里`Pending Cursor`的实现是磁盘文件，配置文件中的`tempUs
 当`prefetchSize=0`时Client每次调用receiver()方法去Broker啦取一条消息，当`prefetchSize>=1`时，Broker每次主动往prefetchSize的buffer中push数据。
 注：使用`receive()`时，prefetchSize可以为0和任意大于0的值，当使用MessageListener异步获取消息时，prefetchSize值必须 >=1，如果设置0，会抛异常。
 2. 通常消费者消费某个destination的消息是单线程的，这样会导致消息处理速度较慢，若要加快消息处理速度可以采用多线程方式，具体见`开发中遇到的问题(八)`
+
+
