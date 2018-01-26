@@ -96,21 +96,30 @@ Tip：这些也可以通过Client端配置，可以参考：http://activemq.apac
 
 
 ### 1. 限制策略（pendingMessageLimitStrategy）
-**针对Slow Consumer，Topic，no-durable订阅者有效**，当通道中有大量的消息积压时，broker可以pending在RAM中的消息量。
-- 为了防止Topic中有慢速消费者，导致整个通道消息积压，从而导致broker减缓producer的发送速度,从而影响正常的消费者消费速度。
-- 对于Topic，一条消息只有所有的订阅者都消费才会被删除
-- 超过limit的消息会采用`MessageEvictionStrategy`策略进行剔除。
+**针对存在Slow Consumer时，Topic，no-durable订阅者有效**，当通道中有大量的消息积压时，broker可以pending在RAM中的消息量。
+- 为了防止Topic中有慢速消费者，导致整个通道消息积压，从而导致broker减缓producer的发送速度,从而影响正常的快速的消费者消费速度。
+- 对于Topic，一条消息只有所有的订阅者都消费才会被删除,当出现slow consumer时,超过pendingMessageLimitStrategy的消息会直接被删除，slow consumer将收不到这些消息。
+- 存在Slow Consumer时，会启用Cursor，超过limit的消息会采用`MessageEvictionStrategy`策略剔除Dispatch queue中积压的消息。
 
 可选参数：
 `<constantPendingMessageLimitStrategy limit="1000"/>`: 内存保留1000条消息。
 `<prefetchRatePendingMessageLimitStrategy multiplier="2.5"/>`: 如果prefetchSize为1000，则保留2.5 * 1000条消息
 
 参考：http://activemq.apache.org/slow-consumer-handling.html
-参考：http://activemq.apache.org/slow-consumer-handling.html
+
 
 ### 2. 消息剔除策略（MessageEvictionStrategy）
 **针对Slow Consumer，Topic，nondurable订阅者有效**，PendingMessage的数量超过限制时，broker该如何剔除多余的消息。
-当一条Topic消息达到broker后，两步操作：1.若是持久化消息，先保存到磁盘；2.放入Dispatch queue，此时`pendingMessageLimitStrategy`策略会检测pending Message是否到达limit，如果是则采用`MessageEvictionStrategy`策略将内存中（dispatch queue）的消息剔除到`cursor`中。这个cursor策略由`pendingSubscriberPolicy`和`pendingDurableSubscriberPolicy`控制。
+当一条Topic消息达到broker后，两步操作：1.若是持久化消息，先保存到磁盘；2.放入Dispatch queue，此时`pendingMessageLimitStrategy`策略会检测pending Message是否到达limit，如果是则采用`MessageEvictionStrategy`策略将内存中（dispatch queue）的消息剔除，并检测是否存在slow consumer，若是则启用Cursor策略，分页的方式将Cursor中的消息放入Dispatch queue，这个cursor策略由`pendingSubscriberPolicy`和`pendingDurableSubscriberPolicy`控制。
+
+问：这个剔除的消息，Slow Consumer还会收到吗？
+答:**不会**,通过一个简单的测试可以验证,验证测试逻辑如下:
+首先,1.开启2个线程往A_TEST.TOPIC里publishe消息;2.开启多线程subscribe消息,模拟快速消费者;3.开启一个线程subscribe消息并每消费一条消息sleep 0.5s,模拟成慢速消费者;
+然后,先开启2,3两个订阅者,再开启1;观察管理页面的`Active Subscribers for A_TEST.TOPIC`,可以观察到:一个Inflight为0或1且基本满足`Enqueued = Dequeued`,表示能及时消费所有的消息,另一个的Inflight为1~32767的数,其中`Inflight<=Prefetch`,说明当前存在一个快速消费者和一个slow consumer!
+最后,统计两个subscriber消费的消息
+结果: 一个subscriber消费了所有消息，另一个subscriber只消费了一部分消息。
+
+**结论:MessageEvictionStrategy的`discard old messages`是将Dispatch queue中的old Message删除,这些剔除的消息不再发给slow consumer。**。这些被剔除的消息默认被放入`ActiveMQ.DLQ`队列中。
 
 可选参数：
 `<oldestMessageEvictionStrategy/>`: 移除旧消息，默认策略。
@@ -118,18 +127,15 @@ Tip：这些也可以通过Client端配置，可以参考：http://activemq.apac
 `<uniquePropertyMessageEvictionStrategy propertyName="test" />`: 移除具有指定property的旧消息。此属性值在生产者端设置，并移除较旧的。
 
 ### 3. Topic游标策略 pendingSubscriberPolicy和pendingDurableSubscriberPolicy
+ActiveMQ 5.0之前所有non-persistent messaging保存在内存中,persistent messaging直接启用storeCursor,缺点是non-persistent所有消息都保存在内存中,当出现slow consumer会导致RAM到达上限,从而block或减缓producer;对于persistent,如果消费者足够快,那么消息持久化到磁盘后,消息发送是从storCursor到Dispatch queue,这样性能不是最好的!
+ActiveMQ 5.0之后,non-persistent消息直接放入Dispatch queue,当slow consumer出现时启用Cursor策略,而不是block或减缓producer;persistent消息持久化到磁盘后直接将消息放入Dispatch queue,当出现slow consumer后,才启用Cursor策略.
+
 - **pendingSubscriberPolicy**：是针对nondurable subscriber，三种策略：`storeCursor`, `vmCursor`和`fileCursor`。
 - **pendingDurableSubscriberPolicy**：是针对durable subscriber，三种策略：`storeDurableSubscriberCursor`, `vmDurableCursor`和 `fileDurableSubscriberCursor`。
 都默认是store，一般都使用默认，每个具体含义参见：`http://activemq.apache.org/message-cursors.html`
 
 ### 4. Queue游标策略 pendingQueuePolicy
 同上，也有三种策略：`fileQueueCursor` ， `storeCursor` 和 `vmQueueCursor`
-
-可选参数：
-`vmQueueCursor`: 将待转发消息保存在额外的内存(JVM linkeList)的存储结构中。是“非持久化消息”的默认设置，如果Broker不支持Persistent，它是任何类型消息的默认设置。有OOM风险。
-`fileQueueCursor`: 将消息保存到临时文件中。文件存储方式有broker的tempDataStore属性决定。是“持久化消息”的默认设置。
-`storeCursor`: “综合”设置，对于非持久化消息，将采用vmQueueCursor存储，对于持久化消息采用
-`fileQueueCursor`：这是强烈推荐的策略，也是效率最好的策略。
 
 eg：对持久化和非持久化进行个性化配置：
 持久化和非持久化采用vmQueueCursor：
@@ -149,11 +155,10 @@ eg：对持久化和非持久化进行个性化配置：
     </pendingQueuePolicy>
     ```
 
-
 **Tip: 无论是pendingQueuePolicy还是pendingSubscriberPolicy和pendingDurableSubscriberPolicy，都是解决由于消费者速度相对慢情景下，RAM的Dispatch queue无法保存所有积压的消息引入的中间层，解决速度不均衡导致的消息积压问题的方案。且与消息是否是persistent无关。**
 
 ### 5. 转发策略dispatchPolicy
-**仅针对Topic有效**，消息发送给多个subscriber的顺序问题：
+**仅针对Topic有效**，消息发送给多个subscriber的顺序问题。
 
 可选参数：
 `<RoundRobinDispatchPolicy/>`: 轮询，消息将依次发送给每个订阅者
@@ -192,8 +197,8 @@ Broker将如何处理慢消费者。Broker将会启动一个后台线程用来�
     </deadLetterStrategy>
     ```
 `IndividualDeadLetterStrategy`: 把DeadLetter放入各自的死信通道中,queuePrefix自定义死信前缀，useQueueForQueueMessages使用队列保存死信，还有一个属性为“useQueueForTopicMessages”，此值表示是否将Topic的DeadLetter保存在Queue中，默认为true。 
-`SharedDeadLetterStrategy`: 将所有的DeadLetter保存在一个共享的队列中，这是ActiveMQ broker端默认的策略。共享队列默认为“ActiveMQ.DLQ”，可以通过“deadLetterQueue”属性来设定。还有2个很重要的可选参数，“processExpired”表示是否将过期消息放入死信队列，默认为true；“processNonPersistent”表示是否将“非持久化”消息放入死信队列，默认为false。
-`DiscardingDeadLetterStrateg`y: broker将直接抛弃DeadLeatter。如果开发者不需要关心DeadLetter，可以使用此策略。
+`SharedDeadLetterStrategy`: 将所有的DeadLetter保存在一个共享的队列中，这是ActiveMQ broker端默认的策略。共享队列默认为`ActiveMQ.DLQ`，可以通过deadLetterQueue属性来设定。还有2个很重要的可选参数，“processExpired”表示是否将过期消息放入死信队列，默认为true；`processNonPersistent`表示是否将“非持久化”消息放入死信队列，默认为false。
+`DiscardingDeadLetterStrategy`: broker将直接抛弃DeadLeatter。如果开发者不需要关心DeadLetter，可以使用此策略。
 AcitveMQ提供了一个便捷的插件：DiscardingDLQBrokerPlugin，来抛弃DeadLetter：
 指定队列的所有消息，全部，正则匹配：
     ```
