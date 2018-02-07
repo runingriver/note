@@ -9,6 +9,3 @@ tags:
 - ActiveMQ
 ---
 
-【ActiveMQ】PolicyEntry整理(三)
-
-【ActiveMQ】Client客户端的线程资源

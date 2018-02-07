@@ -136,16 +136,17 @@ Tip：`Minor GC`指对survivor和eden区的gc；`Major GC`是指老年代和永�
    `2017-07-22T18:33:16.432+0800: 122.713: [GC [PSYoungGen: 1256318K->100567K(1262080K)]`
 - `-XX:+DisableExplicitGC`： 关闭`System.gc()`，调用`System.gc()`会变成一个空操作
 - `-Xloggc:$CATALINA_BASE/logs/gc.log` gc日志产生的路径
-- `-verbose:gc`： verbose详细的意思,显示详细的GC信息
-    即类似`[GC [PSYoungGen: 230112K->960K(219648K)] 265174K->36086K(303616K), 0.0045880 secs]`的输出
 - `-xx:+printGCdetails`：打印GC详情到输出设备
+即类似`[GC [PSYoungGen: 230112K->960K(219648K)] 265174K->36086K(303616K), 0.0045880 secs]`的输出
+- `-verbose:gc`： verbose详细的意思,显示详细的GC信息，被`-xx:+printGCdetails`参数包括，可不写！
 - `-XX:+PrintTenuringDistribution`：指定JVM 在每次新生代GC时，输出幸存区中对象的年龄分布。
 - `-XX:+HeapDumpOnOutOfMemoryError` `-XX:HeapDumpPath=${PATH}/`: 当发生OOM时,dump下堆内存,HeapDumpPath指定目录时会自动生成`java_pid[xxx].hprof`的文件,这里也可以指定生成的文件名!
 - `-XX:ErrorFile`: 当jvm出现致命错误时，会生成一个错误文件 `hs_err_pid<pid>.log`，其中包括了导致jvm crash的重要信息，当出现crash时，该文件默认会生成到工作目录下，也可通过ErrorFile参数指定:`-XX:ErrorFile=${PATH}/hs_err_pid_%p.log`
 
+Tip：可参考：《深入理解Java虚拟机》第三章3.5.8节 理解GC日志
 
 注意： 
-一般系统都加上了这两个参数：`-verbose:gc`和`-xx:+printGCdetails` ，但是测试删掉`-verbose:gc`参数并没有什么改变！ 
+一般系统都加上了这两个参数：`-verbose:gc`和`-xx:+printGCdetails` ，但是测试删掉`-verbose:gc`参数并没有什么改变！ 因为它已被printGCdetails参数包括了。
 
 只有`-verbose:gc`参数，则GC样式为：`[GC 223188K->40186K(2260992K), 0.0315090 secs] `
 
@@ -153,6 +154,8 @@ Tip：`Minor GC`指对survivor和eden区的gc；`Major GC`是指老年代和永�
 ```
 [GC [PSYoungGen: 1221316K->88958K(1279488K)] 1382475K->259135K(3114496K), 0.0625040 secs] [Times: user=0.18 sys=0.03, real=0.06 secs]
 ```
+其中，`1221316K->88958K(1279488K)`表示：GC前该区域已使用容量->GC后该内存区域已使用量（该区域的占内存总大小）；
+`1382475K->259135K(3114496K)`表示：GC前Java堆已使用大小->GC后Java堆已使用大小（Java堆总大小）
 
 Tip：通常配置GC日志的方法：
 ```
@@ -161,7 +164,8 @@ Tip：通常配置GC日志的方法：
 
 Tip：如果只有`-verbose:gc`参数，gc日志会输出到控制台上，如果`-verbose:gc`和`-Xloggc:filename`参数共存，以`-Xloggc`为准。
 
-
+参考：
+1. 《深入理解Java虚拟机》第三章3.5.8节 理解GC日志
 
 
 
