@@ -1,5 +1,5 @@
 ---
-title: 【HBase】一次rowkey设计
+title: 【HBase】一些有必要知道的知识点（一）
 date: 2016/11/12 11:12:22
 toc: false
 list_number: false
@@ -43,7 +43,13 @@ row格式如下：`xx + 20171108 + mobile + onlyBunch`，相同条件下scan的�
 **所以**，数据了较大的情况下，row的设计最多能包含两个条件（一般是`xxId+时间`），更多条件推荐新建一张保存原表rowKey的HBase索引表。
 **也即**，类似`UserId + Mobile + 时间戳`的rowkey设计是不可取的！
 **另外**，查询效率差别原因：rang和prefix可以通过前缀确定一个比较小的范围，而substring 和regex则是全表扫描row，在加上字符串匹配，所以效率会非常低！
+
 ### 5. Filter的实现原理
+答：所有的Filter都是基于`Filter`和`FilterBase`的，自定义一个Filter，需要将其编译成jar包，然后放到集群上然后重启集群。
+其中最重要的两个需要实现的方法就是：`boolean filterRowKey(byte[] buffer, int offset, int length)`
+和`ReturnCode filterKeyValue(Cell ignored)`，前者决定是否过滤掉这个rowkey，后者决定列的问题：`INCLUDE,INCLUDE_AND_NEXT_COL,SKIP,...`等等。
+Filter是在RegionServer上中读取数据时使用，将过滤操作放到RS上可以减少网络开销，每次scan，其携带的每个Filter都会在每个RegionServer上实例化一个，并按照Filter加入List的顺序执行。
+Tip：详情可参考《HBase实战》中的4.8节，关于过滤数据的阐述。
 
 ### 6. scan中的setCaching与setBatch方法的区别是什么呢？
 setCaching设置的值为每次rpc的请求记录数，默认是1；cache大可以优化性能，但是太大了会花费很长的时间进行一次传输。
@@ -53,6 +59,32 @@ https://docs.transwarp.io/4.7/goto?file=HyperbaseManual_hbase-architecture-chapt
 http://blog.csdn.net/lin_wj1995/article/details/72967494
 
 ### 7. ResultScanner的机制
+答：首先与HBase相关的默认参数都在`org.apache.hadoop.hbase.HConstants`中定义，
+表相关的参数在`org.apache.hadoop.hbase.client.TableConfiguration`中设置，TableConfiguration中有两个参数：`scannerCaching`和`scannerMaxResultSize`
+默认是：`scannerCaching=100`，`scannerMaxResultSize=2097152L`。
+看ResultScanner的实现：`org.apache.hadoop.hbase.client.ClientScanner#next`
+```
+    public Result next() throws IOException {
+      // If the scanner is closed and there's nothing left in the cache, next is a no-op.
+      if (cache.size() == 0 && this.closed) {
+        return null;
+      }
+      if (cache.size() == 0) {
+        // Contact the servers to load more Results in the cache.
+        loadCache();
+      }
+
+      if (cache.size() > 0) {
+        //取出数据
+        return cache.poll();
+      }
+
+      // if we exhausted this scanner before calling close, write out the scan metrics
+      writeScanMetrics();
+      return null;
+    }
+```
+这里，应该是很明了了，ResultScanner并不是一次把所有符合查询条件的数据都加载到client，而是每次取一部分。
 
 ### 8. 如何找到region的
 答：HBase中有两个特殊的表`-ROOT-`表和`.META.`表，`-ROOT-`表永远只有一个region，`.META.`表可以切分成多个region。他们都保存在RegionServer上。
@@ -71,19 +103,4 @@ T:1006 - T:1009 R2 RS2
 `.META.`表告诉client，rowkey范围在`1001～1005`之间的可以在RS1的R1 region中查找到。
 注：`-ROOT- 和 .META.`的region也不例外，保存的row范围是前闭后开!上面例子只是一个表述。
 总结，查找过程：`client ==> -ROOT- ==> .META. ==> region`,首次查询client会去Zookeeper中拿到`-ROOT-`表信息，随后client会缓存`-ROOT-`表和`.META.`表信息。
-### 9. HTable，HConnection，HConnectionManager三者之间的关系
-1. `HConnection`是client和HBase集群交互的封装,它知道怎么找到HBase的master,region在集群中的哪个RS;
-内部通过缓存保存region的相关信息(保存ROOT表,META表),并且通过与ZK通信知道master,region移动后的重新校准!
-`HConnection`不是一个和server的网络连接,而是管理所有与HBase集群(包括master,region server)的网络连接!
-它由`HConnectionManager`创建,被`HTable`调用!并且其实现类`HConnectionImplementation`是在`HConnectionManager`中!
 
-2. `HConnectionManager`是HBase client的核心,它负责引入配置和环境(如:zk的地址,maxKeyValueSize,caching size,WriteBufferSize等),并创建`HConnection`和`HTable`对象,
-HConnectionManager中提供一个线程池(pool name类似`hconnection-0x114e7639-shared--pool1-t190`)负责处理业务提交过来的操作!
-默认配置:`coreThreads=maxThreads=256`个线程;`workQueue=LinkedBlockingQueue(maxThreads*100)`
-
-3. `HTable`用于与一张指定的HBase table交互,一个非线程安全的类,官方建议使用时创建用完然后丢掉,因为他认为创建一个对象很便宜,且底层是共用连接和线程池;
-
-### 10. SingleColumnValueExcludeFilter和SingleColumnValueFilter的区别
-`SingleColumnValueExcludeFilter` : 列值过滤,当返回的数据中不包含过滤的列,用此方法,效率更高!
-`SingleColumnValueFilter` : 列值过滤,当返回的数据中包含过滤的列,用此方法
-**Tip: 二者都是列值过滤,不同点仅在于返回的数据中是否包含过滤的列!**
