@@ -1,6 +1,6 @@
 ---
 title: 【ZooKeeper】集群搭建(二)
-date: 2017/05/12 11:12:22
+date: 2017/05/13 11:12:22
 toc: false
 list_number: false
 categories:

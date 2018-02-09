@@ -1,6 +1,6 @@
 ---
 title: 【ZooKeeper】集群配置（三）
-date: 2017/05/12 11:12:22
+date: 2017/05/14 11:12:22
 toc: false
 list_number: false
 categories:

@@ -1,6 +1,6 @@
 ---
 title: 记一次蛋疼的mongo to hive导数过程
-date: 2016/11/12 11:12:22
+date: 2017/04/13 11:12:22
 toc: false
 list_number: false
 categories:

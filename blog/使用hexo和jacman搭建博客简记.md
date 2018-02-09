@@ -61,3 +61,11 @@ tags:
 
 
 5. SEO优化：http://www.dajipai.cc/
+
+## 配置域名
+阿里云，腾讯云，百度云都可以购买域名，购买域名为：huzongzhe.cn
+1. 认证，信息设置完成后，进入管理界面，设置域名解析，让域名跳转到指定Ip去。
+2. 添加两个解析：`@`和`www`类型都是A类，Ip为`151.101.88.133`这个就是github的ip。
+`@`和`www`表示支持`huzongzhe.cn`和`www.huzongzhe.cn`额域名解析
+3. 在博客目录的source目录下添加一个CNAME文件（我的是`./blog/source`），里面填入huzongzhe.cn。
+完成！

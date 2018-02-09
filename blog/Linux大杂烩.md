@@ -1,7 +1,7 @@
 ---
 title: Linux大杂烩
 date: 2016/08/13 19:22:11
-toc: true
+toc: false
 list_number: false
 categories:
 - Linux

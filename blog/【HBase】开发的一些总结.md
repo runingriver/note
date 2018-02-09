@@ -1,6 +1,6 @@
 ---
 title: 【HBase】开发的一些总结
-date: 2016/11/12 11:12:22
+date: 2017/06/04 11:12:22
 toc: false
 list_number: false
 categories:
@@ -16,12 +16,18 @@ tags:
 2. 基于列的模糊查找
 列中`value rlike 135`的记录:  `scan 'hbase_db:hbase_table', FILTER=>"ValueFilter(=,'substring:135')"`
 3. 指定列的模糊查找
-`mobile rlike 135`的记录 : `scan 'hbase_db:hbase_table', FILTER=>"ColumnPrefixFilter('mobile') AND ValueFilter(=,'substring:135')"`
+```
+mobile rlike 135`的记录 : `scan 'hbase_db:hbase_table', FILTER=>"ColumnPrefixFilter('mobile') AND ValueFilter(=,'substring:135')"
+```
 Tip:多个列用:`MultipleColumnPrefixFilter (‘Col1’, ‘Col2’)`
 4. 多条件查询
-`scan 'hbase_db:hbase_table', FILTER=>"ColumnPrefixFilter('mobile') AND ( ValueFilter(=,'substring:135') OR ValueFilter(=,'substring:159') )"`
+```
+scan 'hbase_db:hbase_table', FILTER=>"ColumnPrefixFilter('mobile') AND ( ValueFilter(=,'substring:135') OR ValueFilter(=,'substring:159') )"
+```
 5. QualifierFilter基于列的查询:Qualifier表示列
-`scan 'hbase_db:hbase_table', FILTER => "PrefixFilter ('20170713') AND (QualifierFilter (=, 'binary:mobile'))"`
+```
+scan 'hbase_db:hbase_table', FILTER => "PrefixFilter ('20170713') AND (QualifierFilter (=, 'binary:mobile'))"
+```
 
 - - - 
 
@@ -32,24 +38,36 @@ Tip:多个列用:`MultipleColumnPrefixFilter (‘Col1’, ‘Col2’)`
 7. `start Rowkey~StopRowkey`查询,值的设置很有讲究,否则查询不到记录:
 `scan 'hbase_db:hbase_table', {STARTROW=>'20170713', STOPROW=>'2017071386189k7TT269'}`
 8. 以rowkey前缀开始,前缀中包含xx的记录:
-`scan 'hbase_db:hbase_table', {STARTROW=>'20170713', FILTER => "PrefixFilter ('2017071386188Cyac3878')"}`
+```
+scan 'hbase_db:hbase_table', {STARTROW=>'20170713', FILTER => "PrefixFilter ('2017071386188Cyac3878')"}
+```
 
 9. rowkey模糊查询
-`scan 'hbase_db:hbase_table', {FILTER => org.apache.hadoop.hbase.filter.RowFilter.new(org.apache.hadoop.hbase.filter.CompareFilter::CompareOp.valueOf('EQUAL'), org.apache.hadoop.hbase.filter.SubstringComparator.new('861879Lff1782'))}`
+```
+scan 'hbase_db:hbase_table', {FILTER => org.apache.hadoop.hbase.filter.RowFilter.new(org.apache.hadoop.hbase.filter.CompareFilter::CompareOp.valueOf('EQUAL'), org.apache.hadoop.hbase.filter.SubstringComparator.new('861879Lff1782'))}
+```
 10. rowkey正则查询:
-`scan 'hbase_db:hbase_table', {FILTER => org.apache.hadoop.hbase.filter.RowFilter.new(org.apache.hadoop.hbase.filter.CompareFilter::CompareOp.valueOf('EQUAL'),org.apache.hadoop.hbase.filter.RegexStringComparator.new('^20170713'))}`
+```
+scan 'hbase_db:hbase_table', {FILTER => org.apache.hadoop.hbase.filter.RowFilter.new(org.apache.hadoop.hbase.filter.CompareFilter::CompareOp.valueOf('EQUAL'),org.apache.hadoop.hbase.filter.RegexStringComparator.new('^20170713'))}
+```
 
 - - - 
 
 11. 基于**行**的过滤器
 两行记录: `PageFilter (2)`
-`scan 'hbase_db:hbase_table', FILTER => "PrefixFilter ('20170713') AND PageFilter (2)"`
-等价于:  `scan 'hbase_db:hbase_table', FILTER => "PrefixFilter ('20170713')",LIMIT => 2`
+```
+scan 'hbase_db:hbase_table', FILTER => "PrefixFilter ('20170713') AND PageFilter (2)"`
+等价于:  `scan 'hbase_db:hbase_table', FILTER => "PrefixFilter ('20170713')",LIMIT => 2
+```
 12. 基于**列**的过滤器
 显示4列数据: `limit 4:ColumnCountGetFilter (4)`
 `scan 'hbase_db:hbase_table', FILTER => "PrefixFilter ('20170713') AND ColumnCountGetFilter (4)"`
 显示每行中从第1**列**开始的2**列**数据: `limit 1,2:ColumnPaginationFilter (2, 1)`
-`scan 'hbase_db:hbase_table', FILTER => "PrefixFilter ('2017071386189k7TT2690') AND ColumnPaginationFilter (2,1)"`
+
+```
+scan 'hbase_db:hbase_table', FILTER => "PrefixFilter ('2017071386189k7TT2690') AND ColumnPaginationFilter (2,1)"
+```
+
 注：如果结果集是N行M列，那么就是N*M个数据，`ColumnPaginationFilter(2,1)`表示从NxM个数据中的第一个数据开始取2个数据！`PageFilter(2)`，表示取2行数据，即2*M个数据，`ColumnCountGetFilter(2)`，表示从N*M个数据数据中取2个数据。
 12. `get <namespace:table> <rowkey>` 或 `t.get <rowkey>`
 

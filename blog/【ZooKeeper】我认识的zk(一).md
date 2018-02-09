@@ -52,7 +52,10 @@ zk中每个节点都可以设置访问权限,并设置节点的数据权限(设�
 - `getAcl path`来查看节点的访问权限
 #### ZooKeeper提供了如下几种验证模式(scheme)：
 1. `digest`：Client端由用户名和密码验证，譬如`user:password`，digest的密码生成方式是Sha1摘要的base64形式
-    - `java -cp ./zookeeper-3.4.9.jar:./lib/log4j-1.2.16.jar:./lib/slf4j-log4j12-1.6.1.jar:./lib/slf4j-api-1.6.1.jar org.apache.zookeeper.server.auth.DigestAuthenticationProvider test:test`  获取加密后的密码
+    - 获取加密后的密码
+    ```
+    java -cp ./zookeeper-3.4.9.jar:./lib/log4j-1.2.16.jar:./lib/slf4j-log4j12-1.6.1.jar:./lib/slf4j-api-1.6.1.jar org.apache.zookeeper.server.auth.DigestAuthenticationProvider test:test
+    ```
     - `setAcl /test1 digest:test:V28q/NynI4JI3Rk54h0r8O5kMug=:crwda`  设置节点`/test1`为digest访问权限
     - `addauth digest test:test`  认证digest权限,这样就可以访问`/test1`节点了.
 
