@@ -37,7 +37,7 @@ Tip：这条语句中的`STARTROW`和`STOPROW`是两个相邻的Row，从结果�
 其底层是使用一个线程池来与Hbase service做交互！
 但是高qps下，还是可以做一个HTable的对象池，（。。。）我这里基于`0.98.6-hadoop2`版的client实现了一个HTable的线程池！
 如果多线程下使用同一个HTable实例，最直观的结果是数据不完整或丢失（- -我这里踩过一个大坑），这个好像跟Htable在本地的cache相关！
-### 4. 根据row的查询方法：Regex，Substring，Prefix，Rang查询怎样
+### 4. 根据row的查询方法：Regex，Substring，Prefix，Rang查询效率怎样？
 答：结论：`Rang >= Prefix > Substring >=Regex`，上述结论基于约12亿数据，8个RS，预分区10个，每个100G，版本`HBase client 0.96`下统计；
 row格式如下：`xx + 20171108 + mobile + onlyBunch`，相同条件下scan的范围查询和前缀查询效率相当，正则和sustring的方式查询非常慢，基本不可用。
 **所以**，数据了较大的情况下，row的设计最多能包含两个条件（一般是`xxId+时间`），更多条件推荐新建一张保存原表rowKey的HBase索引表。
@@ -51,10 +51,24 @@ row格式如下：`xx + 20171108 + mobile + onlyBunch`，相同条件下scan的�
 Filter是在RegionServer上中读取数据时使用，将过滤操作放到RS上可以减少网络开销，每次scan，其携带的每个Filter都会在每个RegionServer上实例化一个，并按照Filter加入List的顺序执行。
 Tip：详情可参考《HBase实战》中的4.8节，关于过滤数据的阐述。
 
-### 6. scan中的setCaching与setBatch方法的区别是什么呢？
-setCaching设置的值为每次rpc的请求记录数，默认是1；cache大可以优化性能，但是太大了会花费很长的时间进行一次传输。
-setBatch设置每次取的column size；有些row特别大，所以需要分开传给client，就是一次传一个row的几个column。
-batch和caching和hbase table column size共同决意了rpc的次数。
+### 6. scan中的`setCaching(int)`,`setBatch(int)`,`setMaxResultSize(long)`,`setCacheBlocks(boolean)`方法的含义？
+`setCaching(int)`设置每次rpc请求缓存在client的行数（rows），ResultScanner每次next()调用从client的Caching中拿数据。默认是`-1`即不设置，此时会使用`HTable.setScannerCaching(int)`中的设置值（默认每次rpc返回100条结果）；
+设置cache大可以优化性能，但是太大了会花费很长的时间进行一次传输，且需要更多的client内存。
+
+每次rpc返回的结果还受`setMaxResultSize(long)`参数影响，`setMaxResultSize(long)`表示每次rpc返回的最大数据量。
+
+`setBatch(int)`用于限制每次ResultScanner的next()调用返回的column size（个人理解为限制返回一行row中列的数量）有些row特别大，所以需要分开传给client，就是一次传一个row的几个column。
+
+batch和caching，MaxResultSize和hbase table column size共同决定了rpc的次数。
+
+`setCacheBlocks(boolean)`指定本次scan请求是否禁止server端的block caching
+>  To explicitly disable server-side block caching for this scan
+
+其他参数：
+`getWriteBufferSize:2097152`
+`isAutoFlush:true`
+`maxKeyValueSize=10485760`
+
 https://docs.transwarp.io/4.7/goto?file=HyperbaseManual_hbase-architecture-chapter.html#hbase-architecture-chapter
 http://blog.csdn.net/lin_wj1995/article/details/72967494
 
