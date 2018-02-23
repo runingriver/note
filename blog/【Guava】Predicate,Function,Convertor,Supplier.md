@@ -1,5 +1,5 @@
 ---
-title: 【Guava】几个常用的方法整理
+title: 【Guava】Predicate,Function,Convertor,Supplier
 date: 2016/08/14 19:22:11
 toc: true
 list_number: false
@@ -19,21 +19,22 @@ List的过滤视图被省略了，因为不能有效地支持类似`get(int)`的
 对Set的转换操作被省略了，因为不能有效支持`contains(Object)`操作懒视图实际上不会全部计算转换后的Set元素，因此不能高效地支持`contains(Object)`。改用`Sets.newHashSet(Collections2.transform(set, function))`进行拷贝转换。
 过滤方法：
 ```
-Iterables.filter(Iterable, Predicate)FluentIterable.filter(Predicate)
-Iterators.filter(Iterator, Predicate)
+Iterables.filter(Iterable, Predicate)
+FluentIterable.filter(Predicate)
 Collections2.filter(Collection, Predicate)
 Sets.filter(Set, Predicate)
-Sets.filter(SortedSet, Predicate)
-Maps.filterKeys(Map, Predicate)Maps.filterValues(Map, Predicate)Maps.filterEntries(Map, Predicate)
-Maps.filterKeys(SortedMap, Predicate)Maps.filterValues(SortedMap, Predicate)Maps.filterEntries(SortedMap, Predicate)
-Multimaps.filterEntries(Multimap, Predicate)
+Maps.filterKeys(Map, Predicate)
+Maps.filterValues(Map, Predicate)
+Maps.filterEntries(Map, Predicate)
 ```
 用Predicate过滤Iterable的工具：
 ```
 //是否所有元素满足断言？懒实现：如果发现有元素不满足，不会继续迭代
-Iterators.all(Iterator, Predicate)FluentIterable.allMatch(Predicate) 
+Iterators.all(Iterator, Predicate)
+FluentIterable.allMatch(Predicate) 
 //是否有任意元素满足元素满足断言？懒实现：只会迭代到发现满足的元素	
-Iterators.any(Iterator, Predicate)FluentIterable.anyMatch(Predicate) 
+Iterators.any(Iterator, Predicate)
+FluentIterable.anyMatch(Predicate) 
 Iterators.find(Iterator, Predicate)
 Iterables.find(Iterable, Predicate, T default)
 //循环并返回一个满足元素满足断言的元素，如果没有则抛出NoSuchElementException
@@ -47,31 +48,19 @@ Iterators.removeIf(Iterator, Predicate)
 tip：另一种：`Optional<T> tryFind(Iterable, Predicate)` 的返回一个满足元素满足断言的元素，若没有则返回`Optional.absent()`
 
 **集合转换：**
-到目前为止，函数编程最常见的用途为转换集合。同样，所有的Guava转换方法也返回原集合的视图。
+到目前为止，函数编程最常见的用途为转换集合。同样，所有的Guava转换方法也返回原集合的视图。**组合Function使用：**
 ```
-Iterables.transform(Iterable, Function)FluentIterable.transform(Function)
-Iterators.transform(Iterator, Function)
+Iterables.transform(Iterable, Function)
+FluentIterable.transform(Function)
 Collections2.transform(Collection, Function)
 Lists.transform(List, Function)
-Maps.transformValues(Map, Function)Maps.transformEntries(Map, EntryTransformer)
-Maps.transformValues(SortedMap, Function)Maps.transformEntries(SortedMap, EntryTransformer)
-Multimaps.transformValues(Multimap, Function)Multimaps.transformEntries(Multimap, EntryTransformer)
-Multimaps.transformValues(ListMultimap, Function)Multimaps.transformEntries(ListMultimap, EntryTransformer)
+Maps.transformValues(Map, Function)
+Maps.transformEntries(Map, EntryTransformer)
+Multimaps.transformValues(ListMultimap, Function)
 Tables.transformValues(Table, Function)
 ```
-**组合Function使用：**
-```
-Iterables.transform(Iterable, Function)FluentIterable.transform(Function)
-Iterators.transform(Iterator, Function)
-Collections2.transform(Collection, Function)
-Lists.transform(List, Function)
-Maps.transformValues(Map, Function)Maps.transformEntries(Map, EntryTransformer)
-Maps.transformValues(SortedMap, Function)Maps.transformEntries(SortedMap, EntryTransformer)
-Multimaps.transformValues(Multimap, Function)Multimaps.transformEntries(Multimap, EntryTransformer)
-Multimaps.transformValues(ListMultimap, Function)Multimaps.transformEntries(ListMultimap, EntryTransformer)
-Tables.transformValues(Table, Function)
-```
-tip：`Predicates.compose` 将Predicate和Function进行组合。将Function的结果作为Predicate的输入，然后进行判断过滤操作。
+
+**Tip：`Predicates.compose` 将Predicate和Function进行组合。将Function的结果作为Predicate的输入，然后进行判断过滤操作。**
 
 # Function和Functions——对象转换
 
@@ -95,8 +84,8 @@ public static void listTransfor() {
     System.out.println(transformUpcast.toString());
 }
 ```
-## 设计精髓：
-使用单例模式，解决`toStringFunction`
+## 设计：
+在类中使用单例模式，解决`toStringFunction`
 ```
  public static Function<Object, String> toStringFunction() {
   return ToStringFunction.INSTANCE;
@@ -144,8 +133,8 @@ assertEquals("Wisconsin", state);
 
 ## Supplier&Suppliers
 
-Supplier接口：这个接口可以提供一个对象通过给定的类型。我们也可以看到通过各种各样的方式来创建对象。
-Suppliers类：这个类是Suppliers接口的默认实现类。
+Supplier接口：这个接口可以提供一个对象通过给定的类型。我们也可以通过各种各样的方式来创建对象。
+Suppliers类：这个类是Suppliers接口的默认实现类和工具类。
 
 接口方法：
 ```
