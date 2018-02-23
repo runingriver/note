@@ -9,7 +9,6 @@ tags:
 - Linux
 ---
 
-
 ## 1. tr 按列替换
 - `echo "{123}" | tr -d '{}'` 删除输入中的 "{" 和 "}"
 - `cat testfile |tr a-z A-Z`  将文件testfile中的小写字母全部转换成大写字母
@@ -22,6 +21,7 @@ cut 命令从文件的每一行剪切字节、字符和字段并将这些字节�
 - `count=$(echo -e "${line}" | cut -f 2)` 其中,`line`中字符是以tab作为分隔符!
 - `echo $RANDOM | cut -c1-4`，取随机数的前4位，一个生产随机数的方法。
 ### join
+
 将两个文件中相同行的内容连接起来
 `file1`文件内容：
 ```
@@ -38,6 +38,7 @@ asd 222
 qwe 123 111
 asd 456 222
 ```
+
 1. `join -e HHH file1 file2` ：如果file1或file2中找不到指定栏位，则填入`HHH`
 2. `join -i -t | HHH file1 file2`：匹配相同栏位时忽略大小写，并以`|`作为分隔符。
 3. `-a`,`-v`,`-1`,`-2`：都是用来决定没有匹配行时，是否输出不匹配的行！
@@ -59,8 +60,9 @@ asd 456 222
 - `nl file`在输出的内容前加行号
 - `nl -b a file` 遇到空行，也加行号。
 - `nl -n rz -w 3 file` 行号3位对其，前面补0.
-## 7. shuf 打乱文件顺序
-- `shuf sort_file -o rsort_file` 
+## 7. shuf 打乱文件顺序，取随机行
+- `shuf sort_file -o rsort_file`  打乱文件顺序
+- `shuf -n 1 file.txt` 的含义是从file.txt 文件中随机取出一行数据，如果是`-n 2`就是取出两行数据
 ## 8. split 将文件切分
 - `split -5000 file`或`split -l 5000 file` 将file按行切分成多个文件, 文件最大行为5000
 - `split -5000 -d file` 以数字作为后缀,默认:`xaa,xab,xac`, 现在`x00,x01,x02`
@@ -75,7 +77,40 @@ asd 456 222
 `cat a b | sort | uniq > c`   # c 是 a 并 b
 `cat a b | sort | uniq -d > c`   # c 是 a 交 b
 `cat a b b | sort | uniq -u > c`   # c 是 a - b
-## 9. `sed`按行操作文本（大文本操作）
+
+## paste拼接文件
+file1：
+```
+111 aaa
+222 bbb
+```
+file2:
+```
+333 ccc
+444 ddd
+```
+file3:
+```
+555 eee
+666 fff
+```
+
+- `paste file1 file2 file3`结果：
+```
+111 aaa	333 ccc	555 eee
+222 bbb	444 ddd	666 fff
+```
+默认按照tab连接，加上`-d '-'`按照`-`连接！
+- `paste -s file1 file2 file3`结果：把单个文件粘贴为一列，每个文件一行！
+```
+111 aaa	222 bbb
+333 ccc	444 ddd
+555 eee	666 fff
+```
+
+Tip：与join的区别：join把具有相同列的行拼接为一行，paste按照行顺序放到文件末尾列
+
+## 10. `sed`按行操作文本（大文本操作）
 **大文本数据修改，编辑，保存，不能用编辑器打开，可以借助`sed`对大文件进行修改**
 sed编辑行以1为起始index！
 ## 详解
@@ -112,6 +147,11 @@ eg：只查看文件的第100行到第200行 `sed -n '100,200p' a.log`
  `nl file1 | sed '/hello/d' > ./file2` 在每行内容前加一个行号，保存到文件中！
 4. `nl /etc/passwd | sed -n '/bash/{s/bash/blueshell/;p;q}' ` 首先匹配所有`bash`行，然后执行`{}`里面的一组动作，替换bash为blueshell，p打印，q退出！
 
-## 10. 只输出一行中匹配的字符串.
+### 注意
+`sed -i `操作是删除原文件,并将内容写入一个新的文件，如果这个文件正在被其他程序使用并写入内容，由于原文件被删，导致程序无法再继续写入！因为删除后创建的同名文件的Inode不同了。
+解决：用`sed -ic xxx.log`，其中 `-c `选项可以不用破坏文件的软硬链接，修改之后inode不会变，但前提是确保 sed 版本支持` -c` 功能；
+
+## 11. 只输出一行中匹配的字符串.
 语法: `grep -o 'regex'`
 - `less file* | grep type | grep -o 'user\[.*\]user_id' | grep -o '\[.*\]' | sort | uniq` 以`file`开头的所有文件中,每行包含`type`的字符串,提取字符串中以`user[.*]user_id`形式存在`[]`中的内容!
+ 
