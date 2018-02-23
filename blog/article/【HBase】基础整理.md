@@ -50,7 +50,7 @@ Tip：每个Region Server中都会有一个HLog的实例，Region Server会将�
 
 ## 2，Hbase工作原理流程
 综上所述，来张图，并讲述一下Hbase的工作流程：
-![](./images/hbase-processe.png)
+![](/images/hbase-processe.png)
 
 
 ### 写工作流程：
@@ -74,7 +74,7 @@ StoreFile增长到一定阈值 -> 触发Compact合并操作 -> 多个StoreFile�
 
 ## 3，HFile文件格式
 HFile数据组织形式：
-![](./images/hfile.png)
+![](/images/hfile.png)
 
 一个HFile中有多个Data数据块，数据块中有一个header和多个k-v组成，默认64KB，HFile文件尾部有一个Trailer，其中包含数据相关的索引信息，Hbase也是通过Trailer的索引来检索数据。有没有发现，这样的组织非常类似B树！
 

@@ -12,14 +12,14 @@ tags:
 ### 1. Region的rowkey范围是开区间还是闭区间？
 答：region的rowkey是前闭后开(`[start,end)`)，从下面这张图可以看出来：
 
-![](./images/hbase-1.png)
+![](/images/hbase-1.png)
 
 Tip：Name列都是以`Start Key`开始，但不是以`End Key`结尾，而是一串很长的数字，可以想象，应该是无限接近`End Key`的！
 
 再看下面这个：预分区10个，以一位作为分区标记（`hash%10`），插入一条数据，且row是0开头，可以看出仅第一个region有31次请求！
 建表语句：`create 'xx:xxx',{SPLITS => ['1','2','3','4','5','6','7','8','9']},{NAME => 'c', COMPRESSION=>'SNAPPY', VERSIONS => 1}`，
 
-![](./images/hbase-2.png)
+![](/images/hbase-2.png)
 
 再次证明region区间是前闭后开！
 
@@ -27,7 +27,7 @@ Tip：Name列都是以`Start Key`开始，但不是以`End Key`结尾，而是�
 答：scan是前闭后开，[startKey,endKey),如我们做分页的时候通常会拿前一页的最后一行数据的row，并在该row上面加一个byte，以跳过本行，实现快速分页查询的效果！
 以上只证明了是前闭，前闭后开可以在shell中证明：`scan 'xxx', {STARTROW=>'qb_car_pc2017092811451858', STOPROW=>'qb_car_pc2017092812330135'}`执行结果：
 
-![](./images/hbase-3.png)
+![](/images/hbase-3.png)
 
 Tip：这条语句中的`STARTROW`和`STOPROW`是两个相邻的Row，从结果中可以看出查询中包含了`STARTROW`，但是结尾是小于`STOPROW`的row。
 

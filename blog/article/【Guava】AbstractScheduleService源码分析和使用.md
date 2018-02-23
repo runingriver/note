@@ -12,7 +12,7 @@ tags:
 **前言：** AbstractScheduledService是guava提供的一个定时任务的实现，提供更简便的使用，并提供任务生命周期的监听。
 
 # AbstractScheduledService和Listener的生命周期
-![AbstractScheduledService和Listener的生命周期](./images/scheduler-service.png)
+![AbstractScheduledService和Listener的生命周期](/images/scheduler-service.png)
 
 # AbstractScheduledService概述
 1. `AbstractScheduledService`抽象类提供和JDK提供的`ScheduledExecutorService`相同的功能，其优势在于，能够管理执行线程的生命周期，并提供监听器。

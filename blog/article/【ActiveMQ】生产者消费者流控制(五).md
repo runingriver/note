@@ -54,8 +54,8 @@ Tip：默认情况下，非持久化消息、事务内的消息均采用异步�
 ### storeCursor（store based cursor）
 broker默认情况下不使用游标，默认是直接将持久化消息分发到对应的消费者的Dispatch队列，如下图:
 
-![](./images/DispatchFastConsumers.png)  
-![](./images/VMCursor.png)
+![](/images/DispatchFastConsumers.png)  
+![](/images/VMCursor.png)
 
 
 上图，是5.x的默认方式：当消费者的消费速度能赶上生产者的速度，那么对于持久化消息会先持久化到磁盘，然后直接发给`Dispatch Queue`（左图）。
@@ -64,7 +64,7 @@ Tip：上图`Message Store`不一定是磁盘哈，当使用的是levelDB时，�
 Tip：这里`Pending Cursor`的实现是磁盘文件，配置文件中的`tempUsage`的地方！
 与非持久化消息处理对比：
 
-![](./images/NonPersistentMsgs.png)
+![](/images/NonPersistentMsgs.png)
 
 默认情况下，非持久化消息由于不持久到磁盘，当消费者速度慢于生产者后，会启用游标策略，将一部分消息持久化到临时文件中。
 注意这里不是在当内存空间不够时才去持久化到一个临时文件中。

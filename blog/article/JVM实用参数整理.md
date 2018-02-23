@@ -67,7 +67,7 @@ Young中多个区域都存在绝对值和相对值的参数，当二者同时存
 | `CMS收集器` | 最短回收停留，更快的服务响应速度，多用于B/S模式！缺点：由于采用与用户线程并发收集策略，可能出现卡顿，可能产生浮动垃圾，基于标记-清除的算法实现，导致Old区碎片，大对象分配找不到空间发生Full GC。 注：默认使用Old空间占68%就开始回收，可以设置内存整理策略`UseCMSCompactAtFullCollection` FullGC时进行内存整理和`CMSFullGCsBeforeCompaction`多少次FullGC后进行一次内存整理。默认情况，每次FullGC都进行一次内存整理。 |
 | `G1收集器` | JDK7开始支持，不再分代，而是分Region的思想，现商用不多。 |
 ### 垃圾收集器组合
-![jvm组合](./images/garbage.jpg)
+![jvm组合](/images/garbage.jpg)
 
 注：连线的才能一起使用！**年轻代都是用`复制算法`，老年代都使用`标记-整理算法`**
 ### 垃圾收集器选择
