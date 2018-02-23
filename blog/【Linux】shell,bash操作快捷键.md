@@ -1,5 +1,5 @@
 ---
-title: shell,bash操作快捷键
+title: 【Linux】shell,bash操作快捷键
 date: 2016/08/13 19:22:11
 toc: false
 list_number: false
