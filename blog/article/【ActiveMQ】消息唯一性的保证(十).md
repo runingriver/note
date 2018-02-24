@@ -124,6 +124,8 @@ synchronized (unconsumedMessages.getMutex() ) {
 分别保存`destination`和`producerId`这样就唯一确定了一条消息，`producerId`采用bitmap实现判断消息是否已经消费过，即`BitArrayBin`实现。
 `BitArrayBin`采用`LinkedList<BitArray>`保存`BitArray`，`BitArray`是一个数组，处理`producerSequenceId`后作为其数组的下标，boolean为value，true表示该位上有值（已经消费）！
 Tip：两层LRU并不是二级缓存的意思，destinations存储的是每一个队列，map存储的是每一个队列中的所有Producer，真正判断是否重复发送的是`BitArrayBin`！
+Tip：`BitArrayBin`其实就是位图+布隆过滤器的思想来判断消息是否重复！
+
 ## 三. ACK的原理
 ACK类型：autoACK，DupACK，ClientACK，IndividualACK。下面简单从源码的角度看看实现，这里只看consumer端client的情况（Producer端是一样的原理）：
 `ActiveMQMessageConsumer`中通过`protected final LinkedList<MessageDispatch> deliveredMessages = new LinkedList<>();`保存已经发送的消息。

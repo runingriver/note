@@ -57,11 +57,11 @@ Tip：详情可参考《HBase实战》中的4.8节，关于过滤数据的阐述
 
 每次rpc返回的结果还受`setMaxResultSize(long)`参数影响，`setMaxResultSize(long)`表示每次rpc返回的最大数据量。
 
-`setBatch(int)`用于限制每次ResultScanner的next()调用返回的column size（个人理解为限制返回一行row中列的数量）有些row特别大，所以需要分开传给client，就是一次传一个row的几个column。
+`setBatch(int)`用于限制每次ResultScanner的next()调用返回的column size（个人理解为限制返回一行row中列的数量）有些row特别大，所以需要分开传给client，就是一次传一个row的几个column。默认`-1`即不限制。
 
 batch和caching，MaxResultSize和hbase table column size共同决定了rpc的次数。
 
-`setCacheBlocks(boolean)`指定本次scan请求是否禁止server端的block caching
+`setCacheBlocks(boolean)`：指定本次scan请求是否禁止server端的`block caching`
 >  To explicitly disable server-side block caching for this scan
 
 其他参数：
