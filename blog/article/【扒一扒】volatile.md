@@ -20,6 +20,7 @@ Java 关键字`volatile`可以让变量的修改在多个线程之间可见，�
 当多线程修改互相独立的变量时，如果这些变量共享同一个缓存行，即被放到同一个缓存行中，如果其中一个核心1修改了其中一个变量A，那么另一个有相同缓存行的核心2的缓存会失效需要重新加载缓存，即使变量A的修改不影响核心2的正确执行，这就导致了性能损失，这就是伪共享。也称作:缓存一致性协议!
 ![缓存一致性协议](/images/command.png)
 
+Tip : L1缓存是处理器独享的，L2缓存是成对处理器共享的（我理解：4核CPU，相当于双核四门，L1就是一个门的缓存，L2就是一个房间的缓存）。
 
 一致协议的两种实现（copy自network）：
 1. 一种实现：（一种早期奔腾处理器上的实现）
@@ -116,3 +117,4 @@ b = 2; // line 2
 1. http://ifeve.com/java-memory-model-5/
 2. http://blog.csdn.net/javazejian/article/details/72772461
 3. https://yq.aliyun.com/articles/46661
+4. https://coolshell.cn/articles/10249.html
