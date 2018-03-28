@@ -29,10 +29,10 @@ Tip：在参考过程中发现参数小错误，因为下面均纯手打，如�
 ## 二，内存分配相关参数
 
 | 参数名 | 简述 | 详解 |
-| --------- | ------ | ------ |
+| :--------- | :------ | :------ |
 | `-Xms` | JVM启动初始堆大小，如：`-Xms4096m`，`-Xms4g` | JVM启动，应用初始堆内存大小。启动后堆的大小调整受`MinHeapFreeRatio`和`MaxHeapFreeRatio`控制，最大不超过`-Xmx`，最小不小于`-Xms`。 |
 | `-Xmx` | JVM最大堆大小，如：`-Xmx4096m`，`-Xmx4g`  | Java程序最大堆内存，默认物理内存的1/4，不设置时默认等于`-Xms` |
-| `-Xmn` | 年轻代大小，当需将对象留在Eden区设置  | 年轻代 = `eden+ 2 survivor space`，整个堆大小=`年轻代大小(Young Generation) + 年老代大小(Old Generation) + 持久代大小(permanent Generation)`。增大年轻代后,将会减小年老代大小.此值对系统性能影响较大,Sun官方推荐配置为整个堆的3/8  |
+| `-Xmn` | 年轻代大小，当需将对象留在Eden区设置  | 年轻代 = `eden+ 2 survivor space`，整个堆大小=`年轻代大小(Young Generation)` + `年老代大小(Old Generation)` + `持久代大小(permanent Generation)`。增大年轻代后,将会减小年老代大小.此值对系统性能影响较大,Sun官方推荐配置为整个堆的3/8  |
 | `-Xss` | 每个线程栈大小 | JDK5.0后默认1M，以前是256K |
 | `MinHeapFreeRatio` | 当堆可用内存小于此值时扩展堆大小 | 当堆空余内存小于整个堆大小的MinHeapFreeRatio（默认40%）时，JVM会增加堆大小，默认值40，当-Xmx 和-Xms 相等时参数无效。 |
 | `MaxHeapFreeRatio` | 当堆空闲内存大于此值是缩小堆大小 | 当堆空余内存大于整个堆大小的MaxHeapFreeRatio（默认70%）时，JVM会缩小堆大小，默认值70，当-Xmx 和-Xms 相等时参数无效。 |
@@ -58,7 +58,7 @@ Young中多个区域都存在绝对值和相对值的参数，当二者同时存
 ## 三，GC收集器参数
 ### 垃圾收集器介绍
 | 参数名| 详解 |
-| :---------: | ------ |
+| :--------- | :------ |
 | `Serial收集器` | 单CPU环境简单高效，适用桌面程序。 |
 | `ParNew收集器` | 是Serial的多线程版，多核下比Serial更能有效利用cpu资源，只能和CMS配合使用！ |
 | `Parallel Scavenge` 收集器 | 可控制的吞吐量（吞吐量=运行用户代码时间/(运行用户代码时间+垃圾回收时间)），更高效地利用CPU，适合运算多交互少场景。 |
@@ -82,7 +82,7 @@ Tip：client模式表示启动时加`-client`参数，对应server模式加`-ser
 
 ### 收集器相关参数
 | 参数名 | 简述 | 解释 |
-| ------- | ------ | ------ |
+| :------- | :------ | :------ |
 | `-XX:ParallelGCThreads` | 并行GC时内存回收的线程数 | 当`cpu数量<=8`时，默认8个，`cpu数量>8`时，设置小于cpu数量 |
 | `-XX:+ScavengeBeforeFullGC` | Full GC前是否先Minor GC | 默认true，Full GC前是否先Minor GC |
 | `-XX:+UseGCOverheadLimit` | 默认开启 | 禁止GC无限制的执行，如果过于频繁，就直接抛OOM异常 |
@@ -91,14 +91,16 @@ Tip：client模式表示启动时加`-client`参数，对应server模式加`-ser
 | `-XX:HeapDumpPath` | `-XX:HeapDumpPath=${目录}/java_heapdump.hprof` | 表示生成DUMP文件的路径，也可以指定文件名称,默认文件名为：`java__heapDump.hprof`  |
 
 `Parallel Scavenge`收集器参数：
+
 | 参数名 | 简述 | 解释 |
-| ------- | ------ | ------ |
-| -XX:GCTimeRatio | GC时间占总时间比值 | 默认99，即允许1%的GC时间，仅在使用`Parallel Scavenge`收集器时生效。 |
-| -XX:MaxGCPauseMillis | GC最大停顿时间 | 仅在使用`Parallel Scavenge`收集器时生效 |
+| :--- | :--- | :--- |
+| `-XX:GCTimeRatio` | GC时间占总时间比值 | 默认99，即允许1%的GC时间，仅在使用`Parallel Scavenge`收集器时生效。 |
+| `-XX:MaxGCPauseMillis` | GC最大停顿时间 | 仅在使用`Parallel Scavenge`收集器时生效 |
 
 `CMS`收集器参数：
+
 | 参数名 | 简述 | 解释 |
-| ------- | ------ | ------ |
+| :--- | :--- | :--- |
 | `-XX:CMSInitiatingOccupancyFraction` | 默认值68 | 设置CMS收集器在Old区使用多少后触发GC，默认Old区使用占总Old的68%时触发。 |
 | `-XX:+UseCMSCompactAtFullCollection` | 默认开启 | 设置当CMS GC完后进行内存碎片整理 |
 | `-XX:CMSFullGCsBeforeCompaction` | 无默认值  | 设置CMS进行若干次GC后再启动一次内存碎片整理 |

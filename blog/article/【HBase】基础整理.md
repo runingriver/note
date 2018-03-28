@@ -31,7 +31,7 @@ Region是真实存放 HBase 数据的地方，也就说 Region 是 HBase 可用�
 4. `MemStore,Store,StoreFile`关系：Stroe可以理解成一个Region的数据仓库（是一个虚拟概念），一个Region下可能有多个Stroe（也有多个MemStroe，因为一个store对应一个MemStroe，一个cf对应一个Stroe），一个Stroe下有多个StoreFile。
 MemStore满后会刷到磁盘对应生产一个新的StoreFile，当多次MemStore刷写到磁盘后StoreFile会变多，最后多个小的StoreFile会合并成一个大的StroeFile（即：compact合并操作）。
 一个store对应一个MemStore，一个Store下有多个StoreFile，一个StoreFile对应一个HFile，HFile最后都保存在HDFS中。
-StoreFile和HFile的关系可以看做相等，HFile只是在StroeFile上面做了一层封装。
+**StoreFile和HFile的关系可以看做相等，HFile只是在StroeFile上面做了一层封装。**
 > HBase为了方便按照RowKey进行检索，要求HFile中数据都按照RowKey进行排序，Memstore数据在flush为HFile之前会进行一次排序，将数据有序化；
 
 但是,多个StroeFile之间是有序的吗？
@@ -55,7 +55,7 @@ Tip：每个Region Server中都会有一个HLog的实例，Region Server会将�
 
 ### 写工作流程：
 当一个Client访问HBase集群时，Client需要先和Zookeeper来通信，找到对应的Region Server，一个Region Server管理着很多个Region。
-Client写入 -> 存入内存MemStore，一直到MemStore满 -> Flush成一个新StoreFile，
+Client写入 -> 同时写入HLog和MemStore，两个都返回后才算写入成功 -> 内存中的MemStore被刷满后 -> Flush到磁盘成一个新StoreFile，
 StoreFile增长到一定阈值 -> 触发Compact合并操作 -> 多个StoreFile合并成一个StoreFile，同时进行版本合并和数据删除。
 当StoreFiles Compact后，逐步形成越来越大的StoreFile -> 单个StoreFile大小超过一定阈值后，触发Split操作
 把当前Region Split成2个Region（可以简单理解成：从中间切开，100G从中间切成2个50G），原Region会下线，新Split出的2个孩子Region会被HMaster分配到相应的HRegionServer上（自动rebalance），使得原先1个Region的压力得以分流到2个Region上。
@@ -71,6 +71,17 @@ StoreFile增长到一定阈值 -> 触发Compact合并操作 -> 多个StoreFile�
 
 ### 读工作流程：
 连接过程和写相同，不同的是，读通过缓存来读取记录，使用LRU算法将HFile中热点数据缓存到内存，另外从HFile中读取一行，还要检查MemStore中未持久化到HFile的数据是否有该行的修改记录！
+
+下面整理自《HBase实战》：
+HBase在读操作上使用了LRU缓存技术，叫做`BlockCache`，和MemStore在一个JVM堆里，`BlockCache`用来缓存从HFile里读入内存的频繁访问的数据，每个列族都有自己的`BlockCache`。
+`BlockCache`中的Block时HBase从硬盘完成一次数据读取的单位，HFile物理存放形式是一个BLock的序列外加这些Block的索引，这意味着，从HBase里读取一个Block需要先在索引上查找一次该Block然后从硬盘读出，**Block时建立索引的最小数据单位,也是从硬盘读取数据的最小单位**。Block大小在对应的列族中设定，默认`64KB`可在创建表时设置，**小一点Block有利于随机查询，但是Block变小会导致索引变大，进而消耗更多的内存。大一点的Block有利于顺序扫描，Block变大意味着索引项变少，进而节约内存！**
+从HBase中读出一行，首先会检查MemStore等待修改的队列，然后检查BlockCache看包含该行的Block是否最近被访问过，最后访问硬盘上对应的HFile！
+注意：HFile存放的是某个时间刻MemeStore刷写到磁盘的快照，所有一个完整行的数据可能存放在多个HFile中，所以HBase需要读取包含该行信息的所有HFile。
+
+### HFile合并(HBase后台进行)
+合并分为两种：大合并（`major compaction`）和小合并（`minor compaction`）都是重新整理HFile中的数据。
+1. **小合并：**把多个小HFile合并为一个大HFile，合并时HBase读出多个HFile的内容，然后写入一个新的文件，完成后把新文件设置为激活状态，下线删除构成这个新文件的老文件。这个操作轻微影响HBase性能，其中每次合并HFile的数量等都可设置。
+2. **大合并：**把一个Region下的一个列族的所有HFile进行合并，合并为一个文件，和从shell中手动触发，但此操作相当耗费资源，**且大合并是物理删除一条记录的唯一机会！**，因为小合并不能保证一条记录的删除标识和这条记录在这些HFile中。
 
 ## 3，HFile文件格式
 HFile数据组织形式：
@@ -88,10 +99,13 @@ HFile数据组织形式：
 ### 高表和宽表
 通常倾向于设计成高表，形象的理解如下:
 宽表:
+
 | x | c1  | c2  |  c3 |
 | ---- |:-----:| ---:|
 | r1 | x  | x | x |
+
 高表:
+
 |  x | r1 |
 | ---- |:-----:|
 | c1  |  x |
